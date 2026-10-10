@@ -1,0 +1,1798 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Movies</title>
+<meta name="theme-color" content="#1a0f14">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Limelight&display=swap">
+<style>
+  /* Sala buia: fondo color vino, velluto rosso per le azioni,
+     oro da insegna luminosa per le stelle e i numeri degli anni. */
+  :root {
+    color-scheme: dark;
+    --bg: #1a0f14;
+    --surface: #25161d;
+    --surface-2: #322029;
+    --line: #4a323d;
+    --text: #f6ebdd;
+    --muted: #b79ea6;
+    --accent: #c2314a;
+    --accent-ink: #fff4ec;
+    --gold: #f6c453;
+    --star-off: #4f3642;
+    --danger: #ff8e7a;
+    --display: Limelight, "Bodoni 72", Didot, Georgia, serif;
+    --body: Figtree, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --s: 24px;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg) radial-gradient(ellipse 90% 340px at 50% -120px, rgba(246, 196, 83, .16), transparent) no-repeat;
+    color: var(--text);
+    font: 16px/1.45 var(--body);
+  }
+  input, select, button { font-family: var(--body); }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 28px 16px 64px; }
+
+  header h1 {
+    font-family: var(--display);
+    font-size: 3rem;
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: .02em;
+    color: var(--gold);
+    margin: 0;
+    text-wrap: balance;
+  }
+  header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+  header > div { min-width: 0; }
+  header p { margin: 2px 0 0; color: var(--muted); }
+  .logo { flex: none; display: block; width: 62px; height: 62px; }
+  .wolf-fur { fill: #d8334c; }
+  .wolf-shade { fill: #8e1d31; }
+  .wolf-eye { fill: var(--gold); }
+  .wolf-nose { fill: var(--bg); }
+
+  /* Apertura: il lupo rosso compare, poi la schermata svanisce da sola.
+     Non intercetta i tocchi, quindi l'app sotto è subito utilizzabile. */
+  .splash {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: var(--bg);
+    pointer-events: none;
+    animation: splash-out .5s ease 2.5s forwards;
+  }
+  .splash .wolf { width: 150px; height: 150px; transform-origin: 50% 70%; animation: wolf-in 1.1s cubic-bezier(.2, .9, .3, 1.2) both; }
+  .splash .wolf .wolf-eye { animation: wolf-blink 2.4s ease both; transform-box: fill-box; transform-origin: 50% 50%; }
+  .splash .name { margin: 0; font-family: var(--display); font-size: 2rem; letter-spacing: .02em; color: var(--gold); animation: name-in .6s ease .5s both; }
+  @keyframes wolf-in {
+    0%   { transform: scale(.4) translateY(30px); opacity: 0; }
+    60%  { transform: scale(1.06) translateY(0); opacity: 1; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  @keyframes wolf-blink {
+    0%, 52%, 64%, 100% { transform: scaleY(1); }
+    58% { transform: scaleY(.1); }
+  }
+  @keyframes name-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes splash-out { to { opacity: 0; visibility: hidden; } }
+  @media (prefers-reduced-motion: reduce) {
+    .splash { animation-delay: 1s; }
+    .splash .wolf, .splash .wolf .wolf-eye, .splash .name { animation: none; }
+  }
+
+  .account {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    color: var(--muted);
+    font-size: .875rem;
+  }
+  .account p { margin: 0; }
+  .account #account-text { flex: 1; min-width: 180px; overflow-wrap: anywhere; }
+  .account .msg { flex-basis: 100%; }
+  .account-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 4px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .tab {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-weight: 600;
+    padding: 10px 12px;
+    border-radius: 9px;
+    cursor: pointer;
+  }
+  .tab .count { font-weight: 400; opacity: .75; margin-left: 4px; }
+  .tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+
+  .add {
+    margin-top: 16px;
+    padding: 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    display: grid;
+    grid-template-columns: 1fr 96px;
+    gap: 10px;
+  }
+  .add { position: relative; }
+  .suggest {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    z-index: 10;
+    max-height: 320px;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .28);
+  }
+  .suggest .opt {
+    padding: 10px 12px;
+    min-height: 44px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--line);
+  }
+  .suggest .opt:last-child { border-bottom: 0; }
+  .suggest .opt[aria-selected="true"], .suggest .opt:hover { background: var(--surface-2); }
+  .suggest .opt b { display: block; font-weight: 600; overflow-wrap: anywhere; }
+  .suggest .opt small { display: block; color: var(--muted); font-size: .8rem; }
+  .add .row2 {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  label.field { display: block; }
+  .add .full { grid-column: 1 / -1; }
+  label.field span {
+    display: block;
+    font-size: .85rem;
+    font-weight: 500;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    font: inherit;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible, .stars:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+  .btn {
+    appearance: none;
+    font: inherit;
+    font-weight: 600;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--text);
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn.danger { color: var(--danger); }
+  .btn.small { padding: 6px 10px; font-size: .875rem; font-weight: 500; }
+
+  .rating-pick { display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; }
+  .rating { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+  .step {
+    appearance: none;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--gold);
+    font: inherit;
+    font-size: .8rem;
+    line-height: 1;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .step:disabled { opacity: .35; cursor: default; }
+  .rating-pick output { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 3.5em; }
+
+  /* Stelle */
+  .stars {
+    display: inline-flex;
+    cursor: pointer;
+    border-radius: 6px;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .star { position: relative; width: var(--s); height: var(--s); flex: none; }
+  .star svg { position: absolute; top: 0; left: 0; width: var(--s); height: var(--s); fill: var(--star-off); }
+  .star .fill { position: absolute; top: 0; left: 0; height: 100%; overflow: hidden; width: 0; }
+  .star .fill svg { fill: var(--gold); }
+  .stars.big { --s: 32px; }
+  .msg { margin: 0; color: var(--danger); font-size: .875rem; }
+  .notice {
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: .875rem;
+  }
+  footer .io-msg { flex-basis: 100%; margin: 0; color: var(--text); }
+  .hint { display: none; margin: 0; color: var(--muted); font-size: .8rem; }
+  @media (pointer: coarse) {
+    .stars { --s: 34px; }
+    .stars.big { --s: 40px; }
+    .step { width: 38px; height: 38px; }
+    .hint { display: block; }
+  }
+
+  .toolbar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-top: 22px;
+    color: var(--muted);
+    font-size: .875rem;
+  }
+  .toolbar select { width: auto; padding: 6px 10px; font-size: .875rem; }
+
+  .year { margin-top: 18px; }
+  .year-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 6px;
+  }
+  .year-head h2 {
+    font-family: var(--display);
+    font-size: 2.1rem;
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: .03em;
+    color: var(--gold);
+    margin: 0;
+  }
+  .year-head .meta { color: var(--muted); font-size: .875rem; text-align: right; }
+  .year-tools { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px 10px; }
+  .copy { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+  .copy svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  ul.items { list-style: none; margin: 0; padding: 0; }
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .item .title { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 500; }
+  .season {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 8px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: .8rem;
+    font-weight: 400;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .item .icon-btn {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.1rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    flex: none;
+  }
+  .item .icon-btn:hover { background: var(--surface-2); color: var(--text); }
+
+  .empty {
+    margin-top: 28px;
+    padding: 36px 16px;
+    text-align: center;
+    color: var(--muted);
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+  }
+
+  footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    color: var(--muted);
+    font-size: .875rem;
+  }
+  footer .grow { flex: 1; min-width: 200px; }
+
+  dialog {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    color: var(--text);
+    padding: 20px;
+    width: min(420px, calc(100vw - 32px));
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, .55); }
+  dialog h3 { margin: 0 0 14px; font-size: 1.15rem; }
+  dialog .grid { display: grid; gap: 12px; }
+  dialog .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  dialog .actions { display: flex; gap: 8px; margin-top: 18px; }
+  dialog .actions .spacer { flex: 1; }
+
+  @media (max-width: 480px) {
+    header h1 { font-size: 2.6rem; }
+    .item { flex-wrap: wrap; }
+    .item .title { flex-basis: calc(100% - 46px); order: 1; }
+    .item .icon-btn { order: 2; }
+    .item .rating { order: 3; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="wolf" viewBox="0 0 64 64">
+    <path class="wolf-fur" d="M11 4 L25 22 L9 28 Z"/>
+    <path class="wolf-fur" d="M53 4 L39 22 L55 28 Z"/>
+    <path class="wolf-shade" d="M13 10 L21 21 L13 24 Z"/>
+    <path class="wolf-shade" d="M51 10 L43 21 L51 24 Z"/>
+    <path class="wolf-fur" d="M9 26 L24 19 L32 23 L40 19 L55 26 L60 39 L49 43 L39 54 L32 61 L25 54 L15 43 L4 39 Z"/>
+    <path class="wolf-shade" d="M26 43 L32 37 L38 43 L36 53 L32 61 L28 53 Z"/>
+    <path class="wolf-eye" d="M18 31 L28 35 L21 38 Z"/>
+    <path class="wolf-eye" d="M46 31 L36 35 L43 38 Z"/>
+    <path class="wolf-nose" d="M28.5 49 L35.5 49 L32 54 Z"/>
+  </symbol>
+</svg>
+
+<div class="splash" aria-hidden="true">
+  <svg class="wolf" viewBox="0 0 64 64"><use href="#wolf"/></svg>
+  <p class="name">Movies</p>
+</div>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Movies</h1>
+      <p>Il diario di quello che guardo, anno per anno.</p>
+    </div>
+    <svg class="logo" viewBox="0 0 64 64" role="img" aria-label="Lupo rosso"><use href="#wolf"/></svg>
+  </header>
+
+  <section class="account" id="account" aria-label="Account" hidden>
+    <p id="account-text"></p>
+    <div class="account-actions">
+      <button class="btn small" id="sign-in" type="button">Accedi con Google</button>
+      <button class="btn small" id="migrate" type="button" hidden></button>
+      <button class="btn small" id="sign-out" type="button" hidden>Esci</button>
+    </div>
+    <p class="msg" id="account-msg" role="alert" hidden></p>
+  </section>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-type="film" aria-selected="true">Film<span class="count" id="count-film"></span></button>
+    <button class="tab" role="tab" data-type="tv" aria-selected="false">Serie TV<span class="count" id="count-tv"></span></button>
+  </div>
+
+  <form class="add" id="add-form" autocomplete="off">
+    <label class="field">
+      <span id="add-title-label">Titolo del film</span>
+      <input type="text" id="add-title" required maxlength="200" placeholder="Es. La grande bellezza"
+             role="combobox" aria-autocomplete="list" aria-controls="suggest" aria-expanded="false">
+    </label>
+    <div class="suggest" id="suggest" role="listbox" aria-label="Titoli suggeriti" hidden></div>
+    <label class="field">
+      <span>Visto nel</span>
+      <input type="number" id="add-year" required min="1900" max="2100" step="1" inputmode="numeric">
+    </label>
+    <label class="field full" id="add-season-field" hidden>
+      <span>Stagione</span>
+      <select id="add-season"></select>
+    </label>
+    <div class="row2">
+      <div class="rating-pick">
+        <span id="add-stars-slot"></span>
+        <output id="add-rating-out">Nessun voto</output>
+      </div>
+      <button class="btn primary" type="button" id="add-btn">Aggiungi</button>
+    </div>
+    <p class="msg full" id="add-msg" role="alert" hidden></p>
+    <p class="hint full">Tocca una stella per il voto pieno, toccala di nuovo per la mezza, una terza volta per togliere il voto. La freccia aggiunge mezza stella.</p>
+  </form>
+
+  <p class="notice" id="notice" role="status" hidden></p>
+
+  <div class="toolbar" id="toolbar">
+    <label for="sort">Ordina per</label>
+    <select id="sort">
+      <option value="recent">Aggiunti di recente</option>
+      <option value="rating">Voto</option>
+      <option value="title">Titolo</option>
+    </select>
+  </div>
+
+  <main id="list"></main>
+
+  <footer>
+    <span class="grow"><span id="store-info">I dati restano salvati in questo browser. Usa Esporta per farne una copia o spostarli su un altro dispositivo.</span> I titoli suggeriti arrivano da Wikidata: per cercarli, quello che scrivi nel campo titolo viene inviato a wikidata.org.</span>
+    <button class="btn small" id="export" type="button">Esporta</button>
+    <button class="btn small" id="import" type="button">Importa</button>
+    <input type="file" id="import-file" accept="application/json,.json" hidden>
+    <p class="io-msg" id="io-msg" role="status" hidden></p>
+  </footer>
+</div>
+
+<dialog id="edit-dialog">
+  <form method="dialog" id="edit-form">
+    <h3>Modifica</h3>
+    <div class="grid">
+      <label class="field">
+        <span>Titolo</span>
+        <input type="text" id="edit-title" required maxlength="200">
+      </label>
+      <div class="two">
+        <label class="field">
+          <span>Visto nel</span>
+          <input type="number" id="edit-year" required min="1900" max="2100" step="1" inputmode="numeric">
+        </label>
+        <label class="field">
+          <span>Categoria</span>
+          <select id="edit-type">
+            <option value="film">Film</option>
+            <option value="tv">Serie TV</option>
+          </select>
+        </label>
+      </div>
+      <label class="field" id="edit-season-field">
+        <span>Stagione</span>
+        <select id="edit-season"></select>
+      </label>
+      <div class="rating-pick">
+        <span id="edit-stars-slot"></span>
+        <output id="edit-rating-out"></output>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn danger" type="button" id="edit-delete">Elimina</button>
+      <span class="spacer"></span>
+      <button class="btn" type="button" id="edit-cancel">Annulla</button>
+      <button class="btn primary" type="button" id="edit-save">Salva</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function () {
+  'use strict';
+
+  // Account Google e sincronizzazione tra dispositivi (Firebase).
+  // Incolla qui il blocco firebaseConfig del tuo progetto, al posto di null:
+  //   var FIREBASE_CONFIG = { apiKey: '...', authDomain: '...', projectId: '...', ... };
+  // Finché resta null l'app salva solo in questo browser.
+  var FIREBASE_CONFIG = {
+    apiKey: 'AIzaSyB8bLlO_df-Bsg5X84Vmyvl2xINOjJ-XWw',
+    authDomain: 'film-e-serie-tv-g.firebaseapp.com',
+    projectId: 'film-e-serie-tv-g',
+    storageBucket: 'film-e-serie-tv-g.firebasestorage.app',
+    messagingSenderId: '251002452433',
+    appId: '1:251002452433:web:1a622e84688b026e5688f0'
+  };
+  var FIREBASE_VERSION = '10.12.2';
+
+  var KEY = 'visti-v1';
+
+  // Titoli visti nel 2022, in ordine di visione: [titolo, tipo, stagione].
+  // Vengono aggiunti alla lista una sola volta per browser, così quelli
+  // che poi elimini o modifichi non tornano come prima.
+  var SEED_2022 = [
+    ["Bladerunner 2049", "film", 0],
+    ["The Guardians of the Galaxy Vol 1", "film", 0],
+    ["The Guardians of the Galaxy Vol 2", "film", 0],
+    ["The wrath of a man", "film", 0],
+    ["The Card Counter", "film", 0],
+    ["È stata la mano di dio", "film", 0],
+    ["Shang-Chi", "film", 0],
+    ["Don't look up", "film", 0],
+    ["Nobody", "film", 0],
+    ["King Williams", "film", 0],
+    ["The accountant", "film", 0],
+    ["Il Postino", "film", 0],
+    ["Rush", "film", 0],
+    ["Black Panther", "film", 0],
+    ["Black Widow", "film", 0],
+    ["Civil war", "film", 0],
+    ["Thor ragnarok", "film", 0],
+    ["Thor", "film", 0],
+    ["Infinity war avengers", "film", 0],
+    ["Endgame", "film", 0],
+    ["Captain america winter soldier", "film", 0],
+    ["Antman", "film", 0],
+    ["Iron man 1", "film", 0],
+    ["Loki", "tv", 0],
+    ["Hawkeye", "tv", 0],
+    ["Kingsman 1", "film", 0],
+    ["Kingsman 2", "film", 0],
+    ["Bohemian Rhapsody", "film", 0],
+    ["Lalaland", "film", 0],
+    ["The magnificent Seven", "film", 0],
+    ["Icarus (docufilm)", "film", 0],
+    ["Flight", "film", 0],
+    ["Unbroken", "film", 0],
+    ["Il Grande Lebowski", "film", 0],
+    ["L'ultimo samurai", "film", 0],
+    ["potters ultimi tre", "film", 0],
+    ["Hacksaw t Ridge", "film", 0],
+    ["Lemans 66", "film", 0],
+    ["Red sparrow", "film", 0],
+    ["Kkklans", "film", 0],
+    ["John Wick", "film", 0],
+    ["The tender bar", "film", 0],
+    ["Pulp Fiction", "film", 0],
+    ["All of us are dead", "tv", 0],
+    ["Children of men", "film", 0],
+    ["Ready Player One", "film", 0],
+    ["Gone girl", "film", 0],
+    ["Gran Torino", "film", 0],
+    ["The legend of 900", "film", 0],
+    ["Seven", "film", 0],
+    ["Come ti ammazzo il bodyguard 2", "film", 0],
+    ["Notizie dal mondo", "film", 0],
+    ["Whiplash", "film", 0],
+    ["Balla coi lupi", "film", 0],
+    ["A star is born", "film", 0],
+    ["Harry ti presento sally", "film", 0],
+    ["Io prima di te", "film", 0],
+    ["Free guy", "film", 0],
+    ["Eurovision song contest: Fire Saga", "film", 0],
+    ["Reacher", "tv", 0],
+    ["The spy", "tv", 0],
+    ["The illusionist", "film", 0],
+    ["Il potere del cane", "film", 0],
+    ["Richard jewell", "film", 0],
+    ["The suicide squad 2021", "film", 0],
+    ["Dangerous", "film", 0],
+    ["West side story 2021", "film", 0],
+    ["Prova a prendermi", "film", 0],
+    ["Million dollar baby", "film", 0],
+    ["The harder they fall", "film", 0],
+    ["Il grinta", "film", 0],
+    ["The batman", "film", 0],
+    ["Omicidio sull'oriente express", "film", 0],
+    ["Belfast", "film", 0],
+    ["Tick tick... boom", "film", 0],
+    ["Cloud Atlas", "film", 0],
+    ["Finch", "film", 0],
+    ["Licorice pizza", "film", 0],
+    ["The adam project", "film", 0],
+    ["Good Time", "film", 0],
+    ["L'uomo dei sogni", "film", 0],
+    ["Notting hill", "film", 0],
+    ["La ricerca della felicità", "film", 0],
+    ["Sette anime", "film", 0],
+    ["Nightmare alley", "film", 0],
+    ["The hurt locker", "film", 0],
+    ["Passengers", "film", 0],
+    ["Drive my car", "film", 0],
+    ["Interstellar", "film", 0],
+    ["The equalizer 1", "film", 0],
+    ["The equalizer 2", "film", 0],
+    ["The king's man 3", "film", 0],
+    ["Indipendence day", "film", 0],
+    ["Il ponte delle spie", "film", 0],
+    ["Minority report", "film", 0],
+    ["The departed", "film", 0],
+    ["Shooter", "film", 0],
+    ["CODA", "film", 0],
+    ["War horse", "film", 0],
+    ["WALL-E", "film", 0],
+    ["Sherlock Holmes 1", "film", 0],
+    ["Prisoners", "film", 0],
+    ["Zodiac", "film", 0],
+    ["Training day", "film", 0],
+    ["Omicidio sul nilo x2", "film", 0],
+    ["Full Metal Jacket", "film", 0],
+    ["The terminal", "film", 0],
+    ["Knives out", "film", 0],
+    ["Dunkirk", "film", 0],
+    ["Il caso spotlight", "film", 0],
+    ["6 underground", "film", 0],
+    ["Storia di un matrimonio", "film", 0],
+    ["Ambulance", "film", 0],
+    ["Top Gun", "film", 0],
+    ["Brokeback Mountain", "film", 0],
+    ["Sherlock robert 2", "film", 0],
+    ["Uncharted", "film", 0],
+    ["V per vendetta", "film", 0],
+    ["Dr strange nel multiverso", "film", 0],
+    ["After the sunset", "film", 0],
+    ["El dorado", "film", 0],
+    ["Animali fantastici 1", "film", 0],
+    ["Animali fantastici 2", "film", 0],
+    ["Animali fantastici 3", "film", 0],
+    ["The Northman", "film", 0],
+    ["Top Gun x2 (2022)", "film", 0],
+    ["Jurassic world (2022)", "film", 0],
+    ["Jurassic park 1", "film", 0],
+    ["Buzz lightyear", "film", 0],
+    ["The Guardian", "film", 0],
+    ["Against the Ice", "film", 0],
+    ["Spiderhead", "film", 0],
+    ["Gold", "film", 0],
+    ["The boys", "tv", 3],
+    ["The terminal list", "tv", 0],
+    ["Thor: love & thunder", "film", 0],
+    ["School of rock", "film", 0],
+    ["The gray man", "film", 0],
+    ["Marry me", "film", 0],
+    ["La grande bellezza", "film", 0],
+    ["Arancia meccanica", "film", 0],
+    ["L'aereo più pazzo del mondo", "film", 0],
+    ["Tredici vite", "film", 0],
+    ["Dr house", "tv", 0],
+    ["Infinite", "film", 0],
+    ["La guerra dei mondi", "film", 0],
+    ["Bastardi senza gloria", "film", 0],
+    ["Terminator 1", "film", 0],
+    ["Rush hour 1", "film", 0],
+    ["Prey", "film", 0],
+    ["Rush hour 2", "film", 0],
+    ["Rush hour 3", "film", 0],
+    ["A beatiful mind", "film", 0],
+    ["Peaky blinders", "tv", 0],
+    ["House of Gucci", "film", 0],
+    ["Blade runner", "film", 0],
+    ["The prestige", "film", 0],
+    ["Il gladiatore", "film", 0],
+    ["Una notte da leoni 1", "film", 0],
+    ["Elvis", "film", 0],
+    ["Una pallottola spuntata", "film", 0],
+    ["L'attimo fuggente", "film", 0],
+    ["Il petroliere", "film", 0],
+    ["Sono tornato", "film", 0],
+    ["L'uomo senza sonno", "film", 0],
+    ["Bullet train", "film", 0],
+    ["Cyberpunk", "tv", 0],
+    ["Zootropolis", "film", 0],
+    ["Wolverine 1", "film", 0],
+    ["Hunter killer", "film", 0],
+    ["La vita degli altri", "film", 0],
+    ["Niente di nuovo sul fronte occidentale", "film", 0],
+    ["NOPE", "film", 0],
+    ["Rapiniamo il duce", "film", 0],
+    ["Samaritan", "film", 0],
+    ["Così è la vita", "film", 0],
+    ["Amsterdam", "film", 0],
+    ["La stranezza", "film", 0],
+    ["Nice Guys", "film", 0],
+    ["On the line", "film", 0],
+    ["Ted Lasso", "tv", 0],
+    ["Kinves out - Glass onion", "film", 0],
+    ["Weird the al yankovic story", "film", 0],
+    ["Il mio amico in fondo al mare (docu film)", "film", 0],
+    ["Spirited", "film", 0],
+    ["Poker face", "film", 0],
+    ["The greatest beer run ever", "film", 0],
+    ["Wakanda Forever", "film", 0],
+    ["Pinocchio Guglielmo del Toro", "film", 0],
+    ["Emancipation", "film", 0],
+    ["Rick and morty", "tv", 5],
+    ["Rick and morty", "tv", 6],
+    ["Guardiani della galassia speciale natalizio", "film", 0],
+    ["Violent night", "film", 0],
+    ["La stranezza", "film", 0],
+    ["Il grande giorno", "film", 0]
+  ];
+
+  // Titoli visti nel 2023, stessa forma
+  var SEED_2023 = [
+    ["True Detective", "tv", 1],
+    ["Jack Ryan", "tv", 3],
+    ["8 Montagne", "film", 0],
+    ["Il gatto con gli stivali 2", "film", 0],
+    ["Living", "film", 0],
+    ["The fabelsman", "film", 0],
+    ["Spiderman: into the spider-verse", "film", 0],
+    ["Babylon", "film", 0],
+    ["The menu", "film", 0],
+    ["Alien 1", "film", 0],
+    ["John wick", "film", 0],
+    ["Avatar 2ill", "film", 0],
+    ["Empire of light", "film", 0],
+    ["Mercoledì", "tv", 1],
+    ["Severance", "tv", 0],
+    ["John wick 2", "film", 0],
+    ["John wick 3", "film", 0],
+    ["Mixed by erry", "film", 0],
+    ["The last of us", "tv", 0],
+    ["The unbearable weight of massive talent", "film", 0],
+    ["Tag!", "film", 0],
+    ["Gli spiriti dell'isola", "film", 0],
+    ["Luther the fallen sun", "film", 0],
+    ["John Wick 4", "film", 0],
+    ["Non succede ma se succede", "film", 0],
+    ["Super Mario Bros", "film", 0],
+    ["Guardiani della galassia 3", "film", 0],
+    ["The mandarlorian", "tv", 4],
+    ["Paint", "film", 0],
+    ["The Covenant", "film", 0],
+    ["Sirenetta", "film", 0],
+    ["Barbie", "film", 0],
+    ["The bear", "tv", 0],
+    ["Kandahar", "film", 0],
+    ["Tyler rake 2", "film", 0],
+    ["The equalizer 3", "film", 0],
+    ["One piece", "tv", 0],
+    ["A man called Otto", "film", 0],
+    ["Kon tiki", "film", 0],
+    ["Deadpool 1", "film", 0],
+    ["Deadpool 2", "film", 0],
+    ["The Witcher", "tv", 3],
+    ["Only murders in the Building", "tv", 0],
+    ["Assassinio a Venezia", "film", 0],
+    ["Oppenheimer", "film", 0]
+  ];
+  // Titoli visti nel 2024, stessa forma
+  var SEED_2024 = [
+    ["Wonka", "film", 0],
+    ["La società della neve", "film", 0],
+    ["The Plane", "film", 0],
+    ["The Killer", "film", 0],
+    ["L'ultima notte di Amore", "film", 0],
+    ["The holdhovers", "film", 0],
+    ["Ferrari", "film", 0],
+    ["Perfect Days", "film", 0],
+    ["Bob marley", "film", 0],
+    ["Drive Away dolls", "film", 0],
+    ["Gran Turismo", "film", 0],
+    ["Road House", "film", 0],
+    ["Rick e morty", "tv", 7],
+    ["Jack Reacher", "tv", 0],
+    ["The Gentlemen", "tv", 0],
+    ["La meravigliosa storia di Henry Sugar", "film", 0],
+    ["Dune 2", "film", 0],
+    ["Beckett", "film", 0],
+    ["Avatar", "tv", 0],
+    ["Il problema dei tre corpi", "tv", 0],
+    ["Ghostbusters: gelo", "film", 0],
+    ["Fallout", "tv", 0],
+    ["From", "tv", 0],
+    ["Halo", "tv", 0],
+    ["Transformers: il risveglio", "film", 0],
+    ["Mission impossible: Dead Reckoning part 1", "film", 0],
+    ["Mayor of kingstone", "tv", 0],
+    ["The offer", "tv", 0],
+    ["The beekeper", "film", 0],
+    ["Tha fall guy", "film", 0],
+    ["Il gusto delle cose", "film", 0],
+    ["Eric", "tv", 0],
+    ["Better call saul", "tv", 0],
+    ["La leggenda di Al, john e jack", "film", 0],
+    ["Exploding kittens", "tv", 0],
+    ["Arcane", "tv", 0],
+    ["From", "tv", 0],
+    ["The penguin", "tv", 0],
+    ["Hanno ucciso l'uomo ragno", "tv", 0],
+    ["Gladiatore 2", "film", 0],
+    ["Inside out 2", "film", 0]
+  ];
+  // Titoli visti nel 2025, stessa forma
+  var SEED_2025 = [
+    ["Bob dylan (2025)", "film", 0],
+    ["28 days later (2002)", "film", 0],
+    ["Tremors 1 (1990)", "film", 0],
+    ["Il quinto elemento (1997)", "film", 0],
+    ["Tremors 2 (1996)", "film", 0],
+    ["Tremors 3 (2001)", "film", 0],
+    ["Io robot (2004)", "film", 0],
+    ["Pitch black (2000)", "film", 0],
+    ["Blade (1998)", "film", 0],
+    ["A real pain (2025)", "film", 0],
+    ["Follemente (2025)", "film", 0],
+    ["The Prestige (2006)", "film", 0],
+    ["Blade runner 1 (1982)", "film", 0],
+    ["Kingsman 1 (2014)", "film", 0],
+    ["Mickey 17 (2025)", "film", 0],
+    ["Coach carter (2005)", "film", 0],
+    ["Ballerina (2025)", "film", 0],
+    ["Dragon trainer (2025)", "film", 0],
+    ["Tutti gli uomini del presidente (1976)", "film", 0],
+    ["American sniper (2014)", "film", 0],
+    ["Deadpool vs Wolverine (2024)", "film", 0],
+    ["28 anni dopo (2025)", "film", 0],
+    ["Conclave (2024)", "film", 0],
+    ["Tyler rake 2 (2023)", "film", 0],
+    ["Furiosa (2024)", "film", 0],
+    ["Lo chiamavano Trinità (1970)", "film", 0],
+    ["I sogni segreti di walter mitty (2013)", "film", 0],
+    ["Mr Nobody 2 (2025)", "film", 0],
+    ["Superman (2025)", "film", 0],
+    ["Trafficanti - war dogs (2016)", "film", 0],
+    ["Formula 1 (2025)", "film", 0],
+    ["Play dirty (2025)", "film", 0],
+    ["Wolfs - lupi solitari (2024)", "film", 0],
+    ["Final destination 3 (2006)", "film", 0],
+    ["Final destination (2025)", "film", 0],
+    ["I fantastici 4 (2025)", "film", 0],
+    ["Flow (2024)", "film", 0],
+    ["Una pallottola spuntata (2025)", "film", 0],
+    ["John Wick (2014)", "film", 0],
+    ["Una battaglia dopo l'altra (2025)", "film", 0],
+    ["Audi vs Lancia (2024)", "film", 0]
+  ];
+  // Titoli visti nel 2026, stessa forma
+  var SEED_2026 = [
+    ["Knives out 3 (2025)", "film", 0],
+    ["Greyhound (2020)", "film", 0],
+    ["Homefront (2013)", "film", 0],
+    ["The immortal man (2026)", "film", 0],
+    ["The punisher: one last kill (2026)", "film", 0],
+    ["Pecore sotto copertura (2026)", "film", 0],
+    ["The Martian (2015)", "film", 0],
+    ["Jack Ryan : Ghostwar (2026)", "film", 0],
+    ["Molly's game (2017)", "film", 0],
+    ["Cacciatore di ex (2010)", "film", 0],
+    ["Nuovi cinema paradiso (1988)", "film", 0],
+    ["The departed (2006)", "film", 0],
+    ["Pain&Gain (2013)", "film", 0],
+    ["Real steel (2011)", "film", 0],
+    ["The gorge (2025)", "film", 0],
+    ["Il mago del cremlino (2025)", "film", 0],
+    ["Terminator 1 (1984)", "film", 0],
+    ["Terminator 2 (1991)", "film", 0],
+    ["Mandalorian and grogu (2026)", "film", 0]
+  ];
+  // Serie TV viste nel 2026, stessa forma
+  var SEED_2026_TV = [
+    ["Alice Wonderland (2025)", "tv", 3],
+    ["Pluribus (2025)", "tv", 0],
+    ["The Pitt (2025)", "tv", 0],
+    ["Hijack (2023)", "tv", 0],
+    ["Peacemaker (2025)", "tv", 2],
+    ["Fallout (2026)", "tv", 2],
+    ["The boys (2026)", "tv", 0],
+    ["Invincible (2024)", "tv", 0],
+    ["From (2026)", "tv", 4],
+    ["House of the Dragon (2026)", "tv", 0],
+    ["Rick e morty (2026)", "tv", 9],
+    ["Un gentiluomo a mosca (2020)", "tv", 0]
+  ];
+  var SEEDS = [[2022, SEED_2022], [2023, SEED_2023], [2024, SEED_2024], [2025, SEED_2025], [2026, SEED_2026], [2026, SEED_2026_TV, 'tv']];
+
+  function seedItems(year, rows, tag) {
+    // Le voci vengono distribuite lungo l'anno nell'ordine dell'elenco. Per l'anno in corso
+    // ci si ferma al giorno in cui l'elenco è stato inserito (10 ottobre 2026), così i titoli
+    // che aggiungi dopo risultano più recenti di questi.
+    var base = Date.UTC(year, 0, 1, 12);
+    var end = Math.min(Date.UTC(year, 11, 30), Date.UTC(2026, 9, 10));
+    var step = Math.floor((end - base) / rows.length);
+    return rows.map(function (r, i) {
+      return clean({ id: 'y' + year + (tag || '') + '-' + ('00' + (i + 1)).slice(-3), title: r[0], type: r[1], season: r[2], year: year, rating: 0, added: base + i * step });
+    });
+  }
+  var STAR_PATH = 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z';
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  var MAX_SEASONS = 10; // 0 = tutte le stagioni
+
+  var storageBroken = false;
+  var items = load();
+  var tab = 'film';
+  var sortBy = 'recent';
+  var editingId = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ---------- Dati ---------- */
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      var data = raw ? JSON.parse(raw) : [];
+      var list = Array.isArray(data) ? data.map(clean).filter(Boolean) : [];
+      SEEDS.forEach(function (seed) {
+        var flag = 'visti-seed-' + seed[0] + (seed[2] || ''); // ogni elenco viene aggiunto una sola volta
+        if (localStorage.getItem(flag)) return;
+        var have = {};
+        list.forEach(function (it) { have[it.id] = true; });
+        seedItems(seed[0], seed[1], seed[2]).forEach(function (it) { if (!have[it.id]) list.push(it); });
+        localStorage.setItem(KEY, JSON.stringify(list));
+        localStorage.setItem(flag, '1');
+      });
+      return list;
+    } catch (e) {
+      // archivio non disponibile (per esempio in un'anteprima): i titoli si vedono lo stesso
+      storageBroken = true;
+      return SEEDS.reduce(function (all, seed) { return all.concat(seedItems(seed[0], seed[1], seed[2])); }, []);
+    }
+  }
+
+  function writeLocal() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(items));
+    } catch (e) {
+      storageBroken = true;
+      showNotice();
+    }
+  }
+
+  function showNotice() {
+    var n = $('notice');
+    n.textContent = 'Qui i dati non possono essere salvati: i titoli che aggiungi spariranno alla chiusura della pagina.';
+    n.hidden = false;
+  }
+
+  function say(id, text) {
+    var el = $(id);
+    el.textContent = text;
+    el.hidden = !text;
+  }
+
+  // Normalizza una voce (serve anche per l'importazione)
+  function clean(x) {
+    if (!x || typeof x.title !== 'string' || !x.title.trim()) return null;
+    var year = parseInt(x.year, 10);
+    if (!year || year < 1900 || year > 2100) return null;
+    var rating = Math.round((Number(x.rating) || 0) * 2) / 2;
+    rating = Math.min(5, Math.max(0, rating));
+    var type = x.type === 'tv' ? 'tv' : 'film';
+    var season = type === 'tv' ? parseInt(x.season, 10) || 0 : 0;
+    if (season < 0 || season > MAX_SEASONS) season = 0;
+    return {
+      id: typeof x.id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(x.id) ? x.id : newId(),
+      title: x.title.trim().slice(0, 200),
+      type: type,
+      season: season,
+      year: year,
+      rating: rating,
+      added: Number(x.added) || Date.now()
+    };
+  }
+
+  /* ---------- Account Google (Firebase) ---------- */
+
+  var fbAuth = null, fbStore = null, auth = null, db = null;
+  var user = null;         // account con cui si è entrati, oppure null
+  var cloudReady = false;  // la lista dell'account è arrivata
+  var unsubscribe = null;
+
+  function itemRef(id) {
+    return fbStore.doc(db, 'users', user.uid, 'items', id);
+  }
+
+  function cloudFailed(err) {
+    var denied = err && err.code === 'permission-denied';
+    say('account-msg', denied
+      ? 'Il tuo account non ha il permesso di usare l\'archivio: controlla le regole di Firestore.'
+      : 'Non riesco a raggiungere il tuo account. Le modifiche verranno inviate appena torna la connessione.');
+  }
+
+  // Salva le voci indicate: nell'account se si è entrati, altrimenti nel browser
+  function persist(list) {
+    if (!user) { writeLocal(); return Promise.resolve(); }
+    var jobs = [];
+    for (var i = 0; i < list.length; i += 400) {
+      var batch = fbStore.writeBatch(db);
+      list.slice(i, i + 400).forEach(function (it) { batch.set(itemRef(it.id), it); });
+      jobs.push(batch.commit());
+    }
+    var all = Promise.all(jobs);
+    all.catch(cloudFailed);
+    return all;
+  }
+
+  function forget(id) {
+    if (!user) { writeLocal(); return; }
+    fbStore.deleteDoc(itemRef(id)).catch(cloudFailed);
+  }
+
+  function renderAccount() {
+    var local = user ? load().length : 0;
+    $('sign-in').hidden = !!user;
+    $('sign-out').hidden = !user;
+    $('migrate').hidden = !(user && cloudReady && local > 0);
+    $('migrate').textContent = local === 1
+      ? 'Carica nel tuo account il titolo salvato su questo dispositivo'
+      : 'Carica nel tuo account i ' + local + ' titoli salvati su questo dispositivo';
+    $('account-text').textContent = user
+      ? 'Accesso come ' + (user.email || 'account Google') + '. La lista è la stessa su tutti i tuoi dispositivi.'
+      : 'Accedi con Google per avere la stessa lista su tutti i tuoi dispositivi.';
+    $('store-info').textContent = user
+      ? 'I dati sono salvati nel tuo account Google. Usa Esporta per farne una copia.'
+      : 'I dati restano salvati in questo browser. Usa Esporta per farne una copia o spostarli su un altro dispositivo.';
+    if (user) $('notice').hidden = true;
+  }
+
+  function onUser(u) {
+    if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+    user = u;
+    cloudReady = false;
+    say('account-msg', '');
+    if (!user) {
+      items = load();
+      renderAccount();
+      render();
+      return;
+    }
+    items = [];
+    renderAccount();
+    render();
+    var mine = user;
+    unsubscribe = fbStore.onSnapshot(fbStore.collection(db, 'users', user.uid, 'items'), function (snap) {
+      if (user !== mine) return;
+      var list = [];
+      snap.forEach(function (d) {
+        var it = clean(d.data());
+        if (it) { it.id = d.id; list.push(it); }
+      });
+      items = list;
+      cloudReady = true;
+      renderAccount();
+      render();
+    }, function (err) {
+      cloudReady = true;
+      cloudFailed(err);
+      render();
+    });
+  }
+
+  function initCloud() {
+    if (!FIREBASE_CONFIG) return;
+    var base = 'https://www.gstatic.com/firebasejs/' + FIREBASE_VERSION + '/';
+    Promise.all([
+      import(base + 'firebase-app.js'),
+      import(base + 'firebase-auth.js'),
+      import(base + 'firebase-firestore.js')
+    ]).then(function (m) {
+      var app = m[0].initializeApp(FIREBASE_CONFIG);
+      fbAuth = m[1];
+      fbStore = m[2];
+      auth = fbAuth.getAuth(app);
+      try {
+        // copia locale: l'app funziona anche senza rete e si riallinea dopo
+        db = fbStore.initializeFirestore(app, {
+          localCache: fbStore.persistentLocalCache({ tabManager: fbStore.persistentMultipleTabManager() })
+        });
+      } catch (e) {
+        db = fbStore.getFirestore(app);
+      }
+      $('account').hidden = false;
+      renderAccount();
+      fbAuth.onAuthStateChanged(auth, onUser);
+
+      $('sign-in').addEventListener('click', function () {
+        say('account-msg', '');
+        fbAuth.signInWithPopup(auth, new fbAuth.GoogleAuthProvider()).catch(function (e) {
+          var code = (e && e.code) || '';
+          if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return;
+          say('account-msg', code === 'auth/unauthorized-domain'
+            ? 'Questo indirizzo non è tra i domini autorizzati del progetto Firebase.'
+            : code === 'auth/popup-blocked'
+              ? 'Il browser ha bloccato la finestra di accesso: consenti i popup per questa pagina e riprova.'
+              : 'Accesso non riuscito' + (code ? ' (' + code + ')' : '') + '. Riprova.');
+        });
+      });
+
+      $('sign-out').addEventListener('click', function () { fbAuth.signOut(auth); });
+
+      $('migrate').addEventListener('click', function () {
+        var local = load();
+        if (!user || !local.length) return;
+        $('migrate').disabled = true;
+        persist(local).then(function () {
+          try { localStorage.removeItem(KEY); } catch (e) {}
+        }, function () {}).then(function () {
+          $('migrate').disabled = false;
+          renderAccount();
+        });
+      });
+    }).catch(function () {
+      // Google non raggiungibile: si continua con la lista di questo dispositivo
+      $('account').hidden = false;
+      $('sign-in').hidden = true;
+      $('account-text').textContent = 'Senza connessione a Google: per ora vedi la lista salvata su questo dispositivo.';
+    });
+  }
+
+  function newId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function fmt(n) {
+    return n.toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  }
+
+  function seasonText(n) {
+    return n > 0 ? 'Stagione ' + n : 'Tutte le stagioni';
+  }
+
+  function fillSeasons(select) {
+    for (var n = 0; n <= MAX_SEASONS; n++) {
+      var o = document.createElement('option');
+      o.value = String(n);
+      o.textContent = seasonText(n);
+      select.appendChild(o);
+    }
+  }
+
+  // Voti interi senza decimale: "5 / 5", ma "3,5 / 5"
+  function fmtVote(v) {
+    return v % 1 === 0 ? String(v) : fmt(v);
+  }
+
+  function ratingText(v) {
+    return v > 0 ? fmtVote(v) + ' / 5' : 'Nessun voto';
+  }
+
+  /* ---------- Stelle ---------- */
+
+  function starSvg() {
+    var s = document.createElementNS(SVG_NS, 'svg');
+    s.setAttribute('viewBox', '0 0 24 24');
+    s.setAttribute('aria-hidden', 'true');
+    var p = document.createElementNS(SVG_NS, 'path');
+    p.setAttribute('d', STAR_PATH);
+    s.appendChild(p);
+    return s;
+  }
+
+  function makeStars(value, onChange, label, big) {
+    var el = document.createElement('div');
+    el.className = 'stars' + (big ? ' big' : '');
+    el.tabIndex = 0;
+    el.setAttribute('role', 'slider');
+    el.setAttribute('aria-label', label);
+    el.setAttribute('aria-valuemin', '0');
+    el.setAttribute('aria-valuemax', '5');
+
+    var fills = [];
+    for (var i = 0; i < 5; i++) {
+      var st = document.createElement('span');
+      st.className = 'star';
+      st.appendChild(starSvg());
+      var f = document.createElement('span');
+      f.className = 'fill';
+      f.appendChild(starSvg());
+      st.appendChild(f);
+      el.appendChild(st);
+      fills.push(f);
+    }
+
+    var current = value;
+
+    function paint(v) {
+      fills.forEach(function (f, i) {
+        f.style.width = Math.max(0, Math.min(1, v - i)) * 100 + '%';
+      });
+    }
+
+    function sync() {
+      paint(current);
+      el.setAttribute('aria-valuenow', String(current));
+      el.setAttribute('aria-valuetext', current > 0 ? fmtVote(current) + ' stelle su 5' : 'Nessun voto');
+      up.disabled = current >= 5;
+    }
+
+    function fromEvent(e) {
+      var r = el.getBoundingClientRect();
+      var raw = (e.clientX - r.left) / r.width * 5;
+      return Math.min(5, Math.max(0.5, Math.ceil(raw * 2) / 2));
+    }
+
+    function set(v) {
+      current = Math.min(5, Math.max(0, v));
+      sync();
+      onChange(current);
+    }
+
+    el.addEventListener('pointermove', function (e) {
+      if (e.pointerType === 'mouse') paint(fromEvent(e));
+    });
+    el.addEventListener('pointerleave', function () { paint(current); });
+    // Con il mouse conta la metà della stella su cui si clicca.
+    // Con il dito il bersaglio è la stella intera: piena -> mezza -> nessun voto.
+    var pointer = 'mouse';
+    el.addEventListener('pointerdown', function (e) { pointer = e.pointerType || 'mouse'; });
+    el.addEventListener('click', function (e) {
+      var v = fromEvent(e);
+      if (pointer === 'mouse') {
+        set(v === current ? 0 : v); // un secondo clic sullo stesso voto lo azzera
+        return;
+      }
+      var n = Math.ceil(v);
+      set(current === n ? n - 0.5 : current === n - 0.5 ? 0 : n);
+    });
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); set(current + 0.5); }
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); set(current - 0.5); }
+      else if (e.key === 'Home') { e.preventDefault(); set(0); }
+      else if (e.key === 'End') { e.preventDefault(); set(5); }
+    });
+
+    // Freccetta: ogni tocco aggiunge mezza stella
+    var up = document.createElement('button');
+    up.type = 'button';
+    up.className = 'step';
+    up.textContent = '\u25B6\uFE0E';
+    up.title = 'Aggiungi mezza stella';
+    up.setAttribute('aria-label', label + ': aggiungi mezza stella');
+    up.addEventListener('click', function () { set(current + 0.5); });
+
+    var wrap = document.createElement('span');
+    wrap.className = 'rating';
+    wrap.appendChild(el);
+    wrap.appendChild(up);
+    wrap.setValue = function (v) { current = v; sync(); };
+    sync();
+    return wrap;
+  }
+
+  /* ---------- Copia dell'elenco di un anno ---------- */
+
+  var COPY_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/>' +
+    '<path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>';
+
+  function yearText(year, group) {
+    var lines = [(tab === 'film' ? 'Film visti nel ' : 'Serie TV viste nel ') + year];
+    group.forEach(function (it) {
+      var line = it.title;
+      if (it.type === 'tv') line += ' (' + seasonText(it.season).toLowerCase() + ')';
+      if (it.rating > 0) line += ' - ' + fmtVote(it.rating) + '/5';
+      lines.push(line);
+    });
+    return lines.join('\n');
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).catch(function () { return copyFallback(text); });
+    }
+    return copyFallback(text);
+  }
+
+  function copyFallback(text) {
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) {}
+      ta.remove();
+      if (ok) resolve(); else reject(new Error('copy'));
+    });
+  }
+
+  function copyYear(year, group, button) {
+    var label = button.querySelector('span');
+    copyText(yearText(year, group)).then(function () {
+      label.textContent = 'Copiato';
+    }, function () {
+      label.textContent = 'Copia non riuscita';
+    }).then(function () {
+      setTimeout(function () { label.textContent = 'Copia'; }, 2000);
+    });
+  }
+
+  /* ---------- Lista ---------- */
+
+  function sorter(a, b) {
+    if (sortBy === 'rating') return b.rating - a.rating || b.added - a.added;
+    if (sortBy === 'title') {
+      return a.title.localeCompare(b.title, 'it', { sensitivity: 'base' }) || a.season - b.season;
+    }
+    return b.added - a.added;
+  }
+
+  function render() {
+    var nFilm = 0, nTv = 0;
+    items.forEach(function (it) { if (it.type === 'tv') nTv++; else nFilm++; });
+    $('count-film').textContent = nFilm ? '(' + nFilm + ')' : '';
+    $('count-tv').textContent = nTv ? '(' + nTv + ')' : '';
+
+    document.querySelectorAll('.tab').forEach(function (t) {
+      t.setAttribute('aria-selected', String(t.dataset.type === tab));
+    });
+    $('add-title-label').textContent = tab === 'film' ? 'Titolo del film' : 'Titolo della serie';
+    $('add-title').placeholder = tab === 'film' ? 'Es. La grande bellezza' : 'Es. Gomorra';
+    $('add-season-field').hidden = tab !== 'tv';
+
+    var list = $('list');
+    list.textContent = '';
+
+    var mine = items.filter(function (it) { return it.type === tab; });
+    $('toolbar').hidden = mine.length === 0;
+
+    if (!mine.length) {
+      var empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = user && !cloudReady
+        ? 'Carico la lista dal tuo account…'
+        : tab === 'film'
+        ? 'Nessun film ancora. Aggiungi il primo qui sopra.'
+        : 'Nessuna serie ancora. Aggiungi la prima qui sopra.';
+      list.appendChild(empty);
+      return;
+    }
+
+    var byYear = {};
+    mine.forEach(function (it) { (byYear[it.year] = byYear[it.year] || []).push(it); });
+    var years = Object.keys(byYear).map(Number).sort(function (a, b) { return b - a; });
+
+    years.forEach(function (year) {
+      var group = byYear[year].sort(sorter);
+      var rated = group.filter(function (it) { return it.rating > 0; });
+      var avg = rated.length
+        ? rated.reduce(function (s, it) { return s + it.rating; }, 0) / rated.length
+        : 0;
+
+      var section = document.createElement('section');
+      section.className = 'year';
+
+      var head = document.createElement('div');
+      head.className = 'year-head';
+      var h2 = document.createElement('h2');
+      h2.textContent = year;
+      var meta = document.createElement('div');
+      meta.className = 'meta';
+      var noun = tab === 'film' ? 'film' : 'serie';
+      meta.textContent = group.length + ' ' + noun + (rated.length ? ', media ' + fmt(avg) : '');
+      var copy = document.createElement('button');
+      copy.type = 'button';
+      copy.className = 'btn small copy';
+      copy.innerHTML = COPY_ICON + '<span>Copia</span>';
+      copy.setAttribute('aria-label', 'Copia l\'elenco del ' + year);
+      copy.addEventListener('click', function () { copyYear(year, group, copy); });
+
+      var tools = document.createElement('div');
+      tools.className = 'year-tools';
+      tools.appendChild(meta);
+      tools.appendChild(copy);
+      head.appendChild(h2);
+      head.appendChild(tools);
+      section.appendChild(head);
+
+      var ul = document.createElement('ul');
+      ul.className = 'items';
+      group.forEach(function (it) {
+        var li = document.createElement('li');
+        li.className = 'item';
+
+        var title = document.createElement('span');
+        title.className = 'title';
+        title.textContent = it.title;
+        var fullName = it.title;
+        if (it.type === 'tv') {
+          var badge = document.createElement('span');
+          badge.className = 'season';
+          badge.textContent = seasonText(it.season);
+          title.appendChild(badge);
+          fullName += ', ' + seasonText(it.season).toLowerCase();
+        }
+
+        var stars = makeStars(it.rating, function (v) {
+          it.rating = v;
+          persist([it]);
+          render();
+        }, 'Voto per ' + fullName);
+
+        var edit = document.createElement('button');
+        edit.type = 'button';
+        edit.className = 'icon-btn';
+        edit.textContent = '✎';
+        edit.title = 'Modifica';
+        edit.setAttribute('aria-label', 'Modifica ' + fullName);
+        edit.addEventListener('click', function () { openEdit(it.id); });
+
+        li.appendChild(title);
+        li.appendChild(stars);
+        li.appendChild(edit);
+        ul.appendChild(li);
+      });
+      section.appendChild(ul);
+      list.appendChild(section);
+    });
+  }
+
+  /* ---------- Aggiunta ---------- */
+
+  var addRating = 0;
+  var addStars = makeStars(0, function (v) {
+    addRating = v;
+    $('add-rating-out').textContent = ratingText(v);
+  }, 'Voto', true);
+  $('add-stars-slot').appendChild(addStars);
+  $('add-year').value = new Date().getFullYear();
+  fillSeasons($('add-season'));
+  fillSeasons($('edit-season'));
+
+  // Il pulsante non usa l'invio del modulo: in alcune pagine incorporate
+  // (anteprime, riquadri protetti) l'invio dei moduli viene bloccato.
+  function addItem() {
+    if (!$('add-title').value.trim()) {
+      say('add-msg', 'Scrivi un titolo.');
+      $('add-title').focus();
+      return;
+    }
+    var item = clean({
+      title: $('add-title').value,
+      year: $('add-year').value,
+      type: tab,
+      season: $('add-season').value,
+      rating: addRating,
+      added: Date.now()
+    });
+    if (!item) {
+      say('add-msg', 'Scrivi un anno tra 1900 e 2100.');
+      $('add-year').focus();
+      return;
+    }
+    say('add-msg', '');
+    cancelSuggest();
+    items.push(item);
+    persist([item]);
+    $('add-title').value = '';
+    $('add-season').value = '0';
+    addRating = 0;
+    addStars.setValue(0);
+    $('add-rating-out').textContent = ratingText(0);
+    render();
+    $('add-title').focus();
+  }
+
+  $('add-btn').addEventListener('click', addItem);
+  $('add-form').addEventListener('submit', function (e) { e.preventDefault(); addItem(); });
+  ['add-title', 'add-year'].forEach(function (id) {
+    $(id).addEventListener('keydown', function (e) {
+      // Invio sceglie il suggerimento evidenziato, se c'è; altrimenti aggiunge
+      if (e.key === 'Enter' && !e.defaultPrevented) { e.preventDefault(); addItem(); }
+    });
+  });
+
+  /* ---------- Suggerimenti dei titoli (Wikidata) ---------- */
+
+  var SUGGEST_URL = 'https://www.wikidata.org/w/api.php?action=wbsearchentities&type=item' +
+    '&language=it&uselang=it&limit=50&format=json&origin=*&search=';
+  var SUGGEST_MAX = 8;
+  var YEAR_MIN = 1920;
+  var YEAR_MAX = new Date().getFullYear();
+
+  // Wikidata restituisce di tutto (libri, album, città...): si tengono solo
+  // le voci la cui descrizione dice che sono un film o una serie TV.
+  var FILM_RE = /^film\b|^(cortometraggio|mediometraggio|documentario)\b|^\d{4}\b.*\bfilm\b/i;
+  var FILM_NOT = /\b(album|soundtrack|series|score|poster|trailer|festival)\b/i;
+  var TV_RE = /^(serie televisiva|serie tv|serie animata|serie anime|miniserie|webserie|sitcom|soap opera|telenovela|anime)\b|\b(television|tv|web|anime|animated) (series|miniseries|show)\b|^\d{4}\b.*\b(miniseries|sitcom)\b/i;
+  var TV_NOT = /\b(episod\w*|stagione|season|personaggio|character|album|franchise)\b/i;
+
+  var sInput = $('add-title');
+  var sBox = $('suggest');
+  var sItems = [];
+  var sActive = -1;
+  var sTimer = null;
+  var sCtrl = null;
+  var sSeq = 0;
+
+  function filterSuggest(rows, type) {
+    var out = [], seen = {};
+    for (var i = 0; i < rows.length && out.length < SUGGEST_MAX; i++) {
+      var title = rows[i].label;
+      var desc = rows[i].description || '';
+      if (!title || !desc) continue;
+      if (type === 'tv') {
+        if (!TV_RE.test(desc) || TV_NOT.test(desc)) continue;
+      } else {
+        if (!FILM_RE.test(desc) || FILM_NOT.test(desc)) continue;
+        var y = desc.match(/\b(1[89]\d\d|20\d\d)\b/);
+        if (y && (y[1] < YEAR_MIN || y[1] > YEAR_MAX)) continue;
+      }
+      var key = title + '|' + desc;
+      if (seen[key]) continue;
+      seen[key] = true;
+      out.push({ title: title, desc: desc });
+    }
+    return out;
+  }
+
+  function closeSuggest() {
+    sItems = [];
+    sActive = -1;
+    sBox.hidden = true;
+    sBox.textContent = '';
+    sInput.setAttribute('aria-expanded', 'false');
+    sInput.removeAttribute('aria-activedescendant');
+  }
+
+  // Chiude e scarta anche le risposte ancora in arrivo
+  function cancelSuggest() {
+    clearTimeout(sTimer);
+    sSeq++;
+    if (sCtrl) sCtrl.abort();
+    closeSuggest();
+  }
+
+  function pickSuggest(i) {
+    if (!sItems[i]) return;
+    sInput.value = sItems[i].title;
+    cancelSuggest();
+    sInput.focus();
+  }
+
+  function markSuggest(i) {
+    sActive = i;
+    var opts = sBox.children;
+    for (var k = 0; k < opts.length; k++) opts[k].setAttribute('aria-selected', String(k === i));
+    if (i >= 0) {
+      sInput.setAttribute('aria-activedescendant', opts[i].id);
+      opts[i].scrollIntoView({ block: 'nearest' });
+    } else {
+      sInput.removeAttribute('aria-activedescendant');
+    }
+  }
+
+  function showSuggest(list) {
+    closeSuggest();
+    if (!list.length) return;
+    sItems = list;
+    list.forEach(function (it, i) {
+      var opt = document.createElement('div');
+      opt.className = 'opt';
+      opt.id = 'suggest-' + i;
+      opt.setAttribute('role', 'option');
+      opt.setAttribute('aria-selected', 'false');
+      var b = document.createElement('b');
+      b.textContent = it.title;
+      var d = document.createElement('small');
+      d.textContent = it.desc;
+      opt.appendChild(b);
+      opt.appendChild(d);
+      // senza questo il clic toglierebbe il focus al campo e chiuderebbe l'elenco
+      opt.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      opt.addEventListener('click', function (e) { e.preventDefault(); pickSuggest(i); });
+      sBox.appendChild(opt);
+    });
+    var form = $('add-form');
+    sBox.style.top = (sInput.getBoundingClientRect().bottom - form.getBoundingClientRect().top + 4) + 'px';
+    sBox.hidden = false;
+    sInput.setAttribute('aria-expanded', 'true');
+  }
+
+  function querySuggest() {
+    var q = sInput.value.trim();
+    if (sCtrl) sCtrl.abort();
+    var seq = ++sSeq;
+    if (q.length < 2 || !window.fetch) { closeSuggest(); return; }
+    var type = tab;
+    sCtrl = window.AbortController ? new AbortController() : null;
+    fetch(SUGGEST_URL + encodeURIComponent(q), sCtrl ? { signal: sCtrl.signal } : undefined)
+      .then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); })
+      .then(function (data) {
+        if (seq !== sSeq) return;
+        showSuggest(filterSuggest(data.search || [], type));
+      })
+      .catch(function () {
+        // senza rete o con Wikidata non raggiungibile si scrive il titolo a mano
+        if (seq === sSeq) closeSuggest();
+      });
+  }
+
+  sInput.addEventListener('input', function () {
+    clearTimeout(sTimer);
+    sTimer = setTimeout(querySuggest, 250);
+  });
+
+  sInput.addEventListener('keydown', function (e) {
+    if (sBox.hidden) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); markSuggest((sActive + 1) % sItems.length); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); markSuggest(sActive <= 0 ? sItems.length - 1 : sActive - 1); }
+    else if (e.key === 'Enter' && sActive >= 0) { e.preventDefault(); pickSuggest(sActive); }
+    else if (e.key === 'Escape') { e.preventDefault(); cancelSuggest(); }
+  });
+
+  sInput.addEventListener('blur', function () {
+    setTimeout(function () {
+      // se nel frattempo si è tornati nel campo, la ricerca in corso resta valida
+      if (document.activeElement !== sInput) cancelSuggest();
+    }, 150);
+  });
+
+  /* ---------- Modifica ---------- */
+
+  var dialog = $('edit-dialog');
+  var editRating = 0;
+  var editStars = makeStars(0, function (v) {
+    editRating = v;
+    $('edit-rating-out').textContent = ratingText(v);
+  }, 'Voto', true);
+  $('edit-stars-slot').appendChild(editStars);
+
+  function openEdit(id) {
+    var it = items.find(function (x) { return x.id === id; });
+    if (!it) return;
+    editingId = id;
+    disarmDelete();
+    $('edit-title').value = it.title;
+    $('edit-year').value = it.year;
+    $('edit-type').value = it.type;
+    $('edit-season').value = String(it.season);
+    $('edit-season-field').hidden = it.type !== 'tv';
+    editRating = it.rating;
+    editStars.setValue(it.rating);
+    $('edit-rating-out').textContent = ratingText(it.rating);
+    if (dialog.showModal) dialog.showModal(); else dialog.setAttribute('open', '');
+  }
+
+  function closeEdit() {
+    editingId = null;
+    if (dialog.close) dialog.close(); else dialog.removeAttribute('open');
+  }
+
+  function saveEdit() {
+    var it = items.find(function (x) { return x.id === editingId; });
+    if (it) {
+      var next = clean({
+        id: it.id,
+        title: $('edit-title').value,
+        year: $('edit-year').value,
+        type: $('edit-type').value,
+        season: $('edit-season').value,
+        rating: editRating,
+        added: it.added
+      });
+      if (!next) return;
+      items[items.indexOf(it)] = next;
+      persist([next]);
+    }
+    closeEdit();
+    render();
+  }
+
+  $('edit-save').addEventListener('click', saveEdit);
+  $('edit-form').addEventListener('submit', function (e) { e.preventDefault(); saveEdit(); });
+  ['edit-title', 'edit-year'].forEach(function (id) {
+    $(id).addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); saveEdit(); }
+    });
+  });
+
+  $('edit-cancel').addEventListener('click', closeEdit);
+
+  $('edit-type').addEventListener('change', function (e) {
+    $('edit-season-field').hidden = e.target.value !== 'tv';
+  });
+
+  // Eliminazione in due tocchi, senza finestre di conferma del browser
+  var deleteArmed = false;
+
+  function disarmDelete() {
+    deleteArmed = false;
+    $('edit-delete').textContent = 'Elimina';
+  }
+
+  $('edit-delete').addEventListener('click', function () {
+    if (!deleteArmed) {
+      deleteArmed = true;
+      $('edit-delete').textContent = 'Conferma eliminazione';
+      return;
+    }
+    var gone = editingId;
+    items = items.filter(function (x) { return x.id !== gone; });
+    forget(gone);
+    closeEdit();
+    render();
+  });
+
+  /* ---------- Schede e ordinamento ---------- */
+
+  document.querySelectorAll('.tab').forEach(function (t) {
+    t.addEventListener('click', function () {
+      tab = t.dataset.type;
+      cancelSuggest();
+      render();
+    });
+  });
+
+  $('sort').addEventListener('change', function (e) {
+    sortBy = e.target.value;
+    render();
+  });
+
+  /* ---------- Esporta / Importa ---------- */
+
+  $('export').addEventListener('click', function () {
+    var blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'visti-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  });
+
+  $('import').addEventListener('click', function () { $('import-file').click(); });
+
+  $('import-file').addEventListener('change', function (e) {
+    var file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var data = JSON.parse(reader.result);
+        if (!Array.isArray(data)) throw new Error('formato');
+        var incoming = data.map(clean).filter(Boolean);
+        if (!incoming.length) throw new Error('vuoto');
+        var byId = {};
+        items.forEach(function (it) { byId[it.id] = it; });
+        incoming.forEach(function (it) { byId[it.id] = it; });
+        items = Object.keys(byId).map(function (k) { return byId[k]; });
+        persist(incoming);
+        render();
+        say('io-msg', 'Importati ' + incoming.length + ' titoli.');
+      } catch (err) {
+        say('io-msg', 'Il file non è un backup valido.');
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  if (storageBroken) showNotice();
+  render();
+  initCloud();
+})();
+</script>
+</body>
+</html>
